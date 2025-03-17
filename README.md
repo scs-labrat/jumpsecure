@@ -1,9 +1,8 @@
 # JumpSecure
 
-## JumpSecure Banner
-<!-- Replace with an actual banner image if desired -->
+![JumpSecure Banner](#) <!-- Replace with an actual banner image if desired -->
 
-A command-line interface (CLI) tool to establish secure connections between a central server and a jump box using Reverse SSH, OpenVPN, or WireGuard. JumpSecure automates the configuration process, generates preconfigured scripts for jump box deployment, and manages firewall settings for seamless connectivity. Built with Python, it offers a user-friendly interface with colored output and an ASCII banner.
+JumpSecure is a powerful command-line multitool designed to establish and manage secure connections between systems using Tor SSH, Reverse SSH, OpenVPN, and WireGuard. Built in Python, it automates the setup process, generates configuration files, and provides a simple interface for starting, stopping, and testing connections. Whether you're a red teamer seeking anonymity or a sysadmin securing remote access, JumpSecure streamlines the process with flexibility and ease of use.
 
 ## Table of Contents
 
@@ -12,197 +11,193 @@ A command-line interface (CLI) tool to establish secure connections between a ce
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Script Details](#script-details)
-- [Firewall Management](#firewall-management)
+- [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Overview
 
-JumpSecure simplifies the process of creating secure connections in scenarios where a jump box (e.g., a remote device with cellular connectivity) needs to connect to a central server. It supports three secure connection methods:
+JumpSecure integrates multiple secure connection methods into a single tool, allowing users to:
 
-- **Reverse SSH:** Creates a persistent SSH tunnel from the jump box to the central server.
-- **OpenVPN:** Establishes a full VPN connection using certificate-based authentication.
-- **WireGuard:** Sets up a lightweight, modern VPN with key-based authentication.
+- **Tor SSH**: Route traffic through the Tor network for anonymity via an SSH tunnel.
+- **Reverse SSH**: Create a persistent tunnel from a remote server back to your machine.
+- **OpenVPN**: Set up a full VPN server and client configuration.
+- **WireGuard**: Establish a lightweight, modern VPN with minimal setup.
 
-The tool automates the central server setup and generates a standalone Python script with hardcoded configuration details. This script can be transferred to the jump box and executed to complete the setup without additional user input.
+The tool automates dependency checks, firewall management, and configuration generation, making it ideal for red team operations, secure remote access, or privacy-focused networking.
 
 ## Features
 
-- **CLI Menu-Driven Interface:** Easy navigation with options for Reverse SSH, OpenVPN, or WireGuard.
-- **Colored Output:** Improved readability with Colorama.
-- **ASCII Banner:** Stylish startup banner using PyFiglet.
-- **Firewall Management:** Automatically opens user-specified ports for OpenVPN and WireGuard using `ufw`.
-- **Preconfigured Jump Box Scripts:** Generates executable Python scripts with embedded configuration details.
-- **Cross-Method Support:** Integrates three secure connection methods into a single tool.
-- **Error Handling:** Ensures root privileges are present and gracefully manages command failures.
+- **Multiple Connection Methods**: Supports Tor SSH, Reverse SSH, OpenVPN, and WireGuard.
+- **Interactive CLI**: Menu-driven interface when run without arguments, or command-based with options.
+- **Dependency Management**: Checks for required tools and provides installation instructions if missing.
+- **Firewall Automation**: Opens necessary ports using `ufw` for OpenVPN and WireGuard.
+- **Configuration Persistence**: Stores settings in a YAML file for reuse.
+- **Testing Capabilities**: Verifies connection functionality with built-in tests.
+- **Colorized Output**: Enhances readability with `colorama`.
 
 ## Prerequisites
 
-- **Operating System:** Debian-based Linux distribution (e.g., Ubuntu). Other distributions may require tweaks to package installation commands.
-- **Root Privileges:** Must run the script with `sudo` for system-level operations (e.g., installing packages, managing services).
-- **Python 3:** Required to execute the script.
+Before installing and running `jump-secure.py`, ensure the following are met:
 
-### Dependencies:
+- **Operating System**: Debian-based Linux distribution (e.g., Ubuntu or Kali Linux). Other distributions may require adjusting package installation commands.
+- **Root Privileges**: The script must be run with `sudo` to manage system services, install dependencies, and configure firewall rules.
+- **Python 3**: Version 3.6 or higher is required.
+- **Internet Access**: Needed to install dependencies and test connections.
 
+### Required Tools
+
+Depending on the connection method, you’ll need:
+
+- **Tor SSH**: `tor`, `autossh`, `ssh`, `curl`
+- **Reverse SSH**: `ssh`, `autossh`
+- **OpenVPN**: `openvpn`, `easy-rsa`
+- **WireGuard**: `wireguard`
+
+### Python Dependencies
+
+- `click`: For the CLI interface.
+- `pyyaml`: For configuration file handling.
 - `colorama`: For colored terminal output.
-- `pyfiglet`: For the ASCII banner.
 
 ## Installation
 
-### Clone the Repository:
+### Clone the Repository
+
 ```bash
 git clone https://github.com/scs-labrat/jumpsecure.git
 cd jumpsecure
 ```
 
-### Install Python Dependencies:
+### Install Python Dependencies
+
 ```bash
-pip3 install colorama pyfiglet
+pip3 install click pyyaml colorama
 ```
 
-### Ensure Firewall Tool Availability (optional but recommended):
-For OpenVPN and WireGuard, the script uses `ufw` to manage ports. Install it if not present:
+If you encounter permission issues, use:
+
 ```bash
-sudo apt-get install ufw
+pip3 install --user click pyyaml colorama
+```
+
+### Ensure System Tools
+
+Install the core tools required for all methods:
+
+```bash
+sudo apt update && sudo apt install -y tor autossh openssh-client curl openvpn easy-rsa wireguard
+```
+
+If you only plan to use specific methods, install just those dependencies (e.g., `tor` and `autossh` for Tor SSH).
+
+### Verify Installation
+
+Check Python version:
+
+```bash
+python3 --version
+```
+
+Confirm tools are installed:
+
+```bash
+tor --version && autossh --version && ssh -V && curl --version && openvpn --version && wg --version
+```
+
+### Set Up Permissions
+
+Make the script executable:
+
+```bash
+chmod +x jump-secure.py
 ```
 
 ## Usage
 
-### Run the Script:
+`jump-secure.py` can be run in two modes: interactive (no arguments) or command-line (with arguments). It requires root privileges due to system-level operations.
+
+### Interactive Mode
+
+Run the script without arguments to use the interactive menu:
+
 ```bash
-sudo python3 secure_setup.py
-```
-Root privileges are required for package installation, service configuration, and firewall management.
-
-### Main Menu:
-After launching, you'll see an ASCII banner followed by a menu:
-
-```
-Choose connection method:
-1. Reverse SSH
-2. OpenVPN
-3. WireGuard
-Enter choice (1, 2, or 3):
-```
-Enter the number corresponding to your desired method.
-
-### Setup Type Menu:
-Next, choose the setup type:
-
-```
-Choose setup type:
-1. Set up Central Server
-2. Set up Jump Box (requires pre-generated script)
-Enter choice (1 or 2):
+sudo ./jump-secure.py
 ```
 
-### Central Server Setup:
-- Select option `1` to configure the central server.
-- Provide requested details (e.g., IP address, port number).
+You'll see:
 
-The script will:
-- Configure the server (e.g., generate keys, set up services).
-- Open the specified port on the firewall (for OpenVPN and WireGuard).
-- Generate a jump box script (e.g., `setup_jumpbox_openvpn.py`).
-
-#### Example output:
 ```
-Generated 'setup_jumpbox_openvpn.py'.
-Transfer this file to the jump box and run it with 'sudo python3 setup_jumpbox_openvpn.py'.
+Welcome to the Secure Connection Multitool!
+Choose connection method (tor-ssh, reverse-ssh, openvpn, wireguard):
 ```
 
-### Jump Box Setup:
-Transfer the generated script to the jump box (e.g., via `scp`):
+Enter a method (e.g., `tor-ssh`), then choose an action (`setup`, `start`, `stop`, `test`).
+
+### Command-Line Mode
+
+#### Setup a Connection
+
 ```bash
-scp setup_jumpbox_openvpn.py user@jumpbox:/path/
+sudo ./jump-secure.py setup --method <method>
 ```
 
-On the jump box, execute the script:
+Examples:
+
 ```bash
-sudo python3 setup_jumpbox_openvpn.py
+sudo ./jump-secure.py setup --method tor-ssh
+sudo ./jump-secure.py setup --method reverse-ssh
+sudo ./jump-secure.py setup --method openvpn
+sudo ./jump-secure.py setup --method wireguard
 ```
-The script will install required software and configure the connection automatically.
 
----
+#### Start a Connection
 
-## Script Details
-
-### Main Script (`secure_setup.py`)
-**Purpose:** Manages the CLI interface and central server configuration.
-
-**Key Functions:**
-- Displays the ASCII banner.
-- Presents menus for selecting connection methods and setup types.
-- Executes shell commands with error handling.
-- Opens firewall ports using `ufw`.
-- Configures Reverse SSH, OpenVPN, or WireGuard and generates jump box scripts.
-
-### Generated Jump Box Scripts
-#### Reverse SSH (`setup_jumpbox_reverse_ssh.py`):
-- Installs an SSH key and sets up a persistent reverse tunnel via a `systemd` service.
-
-#### OpenVPN (`setup_jumpbox_openvpn.py`):
-- Installs OpenVPN, writes a client configuration with embedded certificates, and starts the service.
-
-#### WireGuard (`setup_jumpbox_wireguard.py`):
-- Installs WireGuard, writes a client configuration with keys, and activates the interface.
-
----
-
-## Firewall Management
-
-**Tool Used:** `ufw` (Uncomplicated Firewall).
-
-**Process:**
-- Prompts for a port number (e.g., `1194` for OpenVPN, `51820` for WireGuard).
-- Opens the specified UDP port using:
-  ```bash
-  ufw allow <port>/udp
-  ufw reload
-  ```
-- If `ufw` is unavailable, it warns the user but proceeds, allowing manual configuration.
-
-### Example:
-#### Input:
-```
-Port 1194 for OpenVPN.
-```
-#### Command:
 ```bash
-ufw allow 1194/udp
-ufw reload
-```
-#### Output:
-```
-Successfully opened port 1194/udp on the firewall.
+sudo ./jump-secure.py start --method <method>
 ```
 
----
+#### Stop a Connection
 
-## Contributing
+```bash
+sudo ./jump-secure.py stop --method <method>
+```
 
-We welcome contributions! To get started:
+#### Test a Connection
 
-1. Fork the repository.
-2. Create a feature branch:
-   ```bash
-   git checkout -b feature/YourFeature
-   ```
-3. Commit your changes:
-   ```bash
-   git commit -m "Add YourFeature"
-   ```
-4. Push to the branch:
-   ```bash
-   git push origin feature/YourFeature
-   ```
-5. Open a pull request.
+```bash
+sudo ./jump-secure.py test --method <method>
+```
 
-Please maintain the existing code style and include comments where necessary.
+## Configuration
 
----
+The script stores settings in a `config.yaml` file in the same directory. Example structure:
 
-## License
+```yaml
+tor-ssh:
+  port: 9050
+reverse-ssh:
+  remote_host: "example.com"
+  remote_user: "user"
+  remote_port: 22
+  local_port: 2222
+openvpn:
+  port: 1194
+wireguard:
+  port: 51820
+```
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+## Troubleshooting
+
+- **Permission Denied**: Ensure you run the script with `sudo`.
+- **Dependency Missing**: If a tool isn’t installed, the script will warn you with an installation command (e.g., `sudo apt install tor`).
+- **Firewall Issues**: If `ufw` isn’t installed, manually open ports (e.g., `iptables -A INPUT -p udp --dport 1194 -j ACCEPT` for OpenVPN).
+- **Connection Fails**: Verify network connectivity, SSH credentials, and that services (e.g., Tor, OpenVPN) are running on the target machine.
+- **Test Fails**: Check if the tunnel or VPN is active (`ps aux | grep autossh` for Reverse SSH, `systemctl status openvpn@server` for OpenVPN).
+
+### For detailed logs:
+
+- **Tor SSH**: Check `/var/log/tor/log`.
+- **OpenVPN**: See `/etc/openvpn/server/openvpn-status.log`.
+- **WireGuard**: Run `wg show`.
